@@ -1,0 +1,627 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // directUrl = env("DIRECT_URL")
+  
+}
+
+model User {
+  id       Int          @id @default(autoincrement())
+  email    String       @unique
+  password String
+  role     UserRole 
+  details  UserDetails?
+
+}
+model VerificationCode {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  code      String
+  expiresAt DateTime
+}
+
+
+model UserDetails {
+  id           Int     @id @default(autoincrement())
+  employeeId   String  @unique
+  userId       Int     @unique
+  user         User    @relation(fields: [userId], references: [id])
+  name         String
+  fingerId     Int?   @unique 
+  nfcId        Int?  @unique
+  email        String 
+  gender       Gender 
+  address      String
+  skills       String[]
+  hireDate     DateTime  @default(now())
+  verified     Boolean @default(false)
+  designation  String
+  contactNo    String
+  profileImage String?
+  joiningDate  DateTime @default(now())
+  status       UserStatus @default(DEACTIVATE)
+  dateOfBirth  DateTime?
+  terminationDate DateTime?
+  resignationDate DateTime?
+  exitType     UserExitType?
+  exitReason   String?
+  lastWorkingDay DateTime?
+  nidNo String?
+  nidImage String?
+  cvImages String[]
+  roasters String[]
+  departmentId Int
+  bloodGroup   String
+  powers       Power[] @relation("UserDetailsPowers")
+  leaves       Leave[]
+  attendances  Attendance[]
+  activities      Activity[]
+  comments       Comment[]
+  reactions      ActivityReaction[]
+  commentReactions CommentReaction[]
+  
+  chatRooms1  ChatRoom[] @relation("chatRoomUser1")
+  chatRooms2  ChatRoom[] @relation("chatRoomUser2")
+  sentMessages    Message[] @relation("messageSender")
+  receivedMessages Message[] @relation("messageReceiver")
+
+  notifications Notification[]
+
+  transactionsCreated Transaction[] @relation("UserDetailsCreatedTransactions")
+
+  department Department? @relation(fields: [departmentId], references: [id], name: "DepartmentUsers")
+  requestedTransactions Transaction[] @relation("UserDetailsRequestedTransactions")
+
+  requisitionsRequested Requisition[] @relation("RequestedBy")
+  requisitionsAction  Requisition[] @relation("createdBy")
+  todos     Todo[]   @relation("AssignedTodos")
+  createdTodos Todo[] @relation("CreatedTodos")
+
+
+  supervisedDepartment Department? @relation("DepartmentSupervisor")
+
+  reviewsGiven     Review[] @relation("UserReviewsGiven")    
+  reviewsReceived  Review[] @relation("UserReviewsReceived") 
+
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([email, contactNo])
+  @@map("user_details")
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  message   String
+  rating    Float  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  reviewerId Int
+  reviewer   UserDetails @relation("UserReviewsGiven", fields: [reviewerId], references: [id])
+
+  revieweeId Int
+  reviewee   UserDetails @relation("UserReviewsReceived", fields: [revieweeId], references: [id])
+}
+
+model Todo {
+  id           Int     @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(PENDING)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  assignedTo  UserDetails[]     @relation("AssignedTodos")
+  createdBy   UserDetails       @relation("CreatedTodos", fields: [createdById], references: [id])
+  createdById Int
+ 
+}
+
+
+model Account {
+  id           Int            @id @default(autoincrement())
+  balance      Float          @default(0)
+  branchId Int @unique
+  branch Branch @relation(fields: [branchId], references: [id])
+  transactions Transaction[]
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Transaction {
+  id            Int           @id @default(autoincrement())
+  amount        Float
+  accountId     Int
+  account       Account       @relation(fields: [accountId], references: [id])
+
+  requestedById Int
+  requestedBy   UserDetails   @relation("UserDetailsRequestedTransactions", fields: [requestedById], references: [id])
+
+  departmentId  Int?
+  department    Department?   @relation(fields: [departmentId], references: [id])
+
+  branchId      Int
+  branch        Branch    @relation(fields: [branchId], references: [id])
+
+  companyId     Int
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  note          String?
+  type          TransactionType
+
+  createdById   Int
+  createdBy     UserDetails   @relation("UserDetailsCreatedTransactions", fields: [createdById], references: [id])
+
+  createdAt     DateTime      @default(now())
+
+  @@index([accountId])
+  @@index([requestedById])
+  @@index([createdById])
+}
+
+
+
+
+
+
+
+
+model Requisition {
+  id            Int       @id @default(autoincrement())
+  title         String
+  description   String?
+  status        RequisitionStatus @default(PENDING)
+  priority      PriorityLevel     @default(MEDIUM)
+  total         Float
+
+  requestedById Int
+  createdById    Int
+  departmentId  Int?
+  branchId      Int
+  companyId     Int
+  company       Company     @relation(fields: [companyId], references: [id])
+
+  requestedBy   UserDetails @relation("RequestedBy", fields: [requestedById], references: [id])
+  createdBy      UserDetails @relation("createdBy", fields: [createdById], references: [id])
+  department    Department?  @relation(fields: [departmentId], references: [id])
+  branch        Branch     @relation(fields: [branchId], references: [id])
+
+  items         RequisitionItem[] 
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+@@index([requestedById])
+@@index([createdById])
+@@index([departmentId])
+@@index([branchId])
+@@index([companyId])
+
+
+  @@map("requisitions")
+}
+
+
+
+model RequisitionItem {
+  id             Int     @id @default(autoincrement())
+  requisitionId  Int
+  title          String
+  quantity       Int
+  description    String?
+  amount         Float   
+  type           RequisitionType
+  status         RequisitionStatus @default(PENDING)
+
+  requisition Requisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("requisition_items")
+}
+
+
+
+
+model ChatRoom {
+  id          Int       @id @default(autoincrement())
+  user1Id     Int
+  user2Id     Int
+  user1       UserDetails      @relation("chatRoomUser1", fields: [user1Id], references: [id])
+  user2       UserDetails      @relation("chatRoomUser2", fields: [user2Id], references: [id])
+  messages    Message[] @relation("ChatRoomMessages")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([user1Id])
+  @@index([user2Id])
+}
+
+
+
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  senderId   Int
+  receiverId Int
+  chatRoomId Int
+
+  sender     UserDetails      @relation("messageSender", fields: [senderId], references: [id])
+  receiver   UserDetails      @relation("messageReceiver", fields: [receiverId], references: [id])
+  chatRoom   ChatRoom  @relation("ChatRoomMessages", fields: [chatRoomId], references: [id])
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+
+
+
+model Power {
+  id    Int           @id @default(autoincrement())
+  name  UserPower @unique
+  users UserDetails[] @relation("UserDetailsPowers")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("powers")
+}
+
+model Company {
+  id    Int           @id @default(autoincrement())
+  name  String        @unique
+  padImage String?
+  branches   Branch[]
+  transactions Transaction[]
+  requisitions Requisition[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("companies")
+}
+model Branch {
+  id    Int           @id @default(autoincrement())
+  name  String        
+  address String 
+  contactNo String
+  companyId Int
+  company  Company @relation(fields: [companyId], references: [id])
+  departments Department[]
+  branch   DepartmentEvent[]
+  account Account?
+  transactions Transaction[]
+
+  requisitions Requisition[] 
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+ @@unique([name, companyId])
+  @@map("branches")
+}
+
+
+model Department {
+  id       Int          @id @default(autoincrement())
+  name     String    
+  workingTimeStart String 
+  workingTimeEnd   String 
+  weeklyWorkingDays FullWeek[]
+  yearlyLeaveCount  Int 
+  supervisorId Int?   @unique    
+  supervisor   UserDetails? @relation(name: "DepartmentSupervisor", fields: [supervisorId], references: [id])
+  branchId Int
+  branch   Branch       @relation(fields: [branchId], references: [id])
+  users    UserDetails[] @relation("DepartmentUsers")
+  events   DepartmentEvent[]
+  transactions Transaction[]
+
+  requisitions Requisition[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, branchId])
+
+  @@map("departments")
+}
+
+model Leave {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  type         LeaveType   @default(CASUAL)
+  status       LeaveStatus   @default(PENDING) // Pending, Approved, Rejected
+  startDate    DateTime
+  endDate      DateTime
+  leaveDays    Int
+  reason       String
+  details      String?
+  user         UserDetails @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leaves")
+}
+
+model Attendance {
+  id         Int             @id @default(autoincrement())
+  fingerId   Int
+  date       DateTime
+  status     AttendanceStatus @default(ON_TIME)
+  user       UserDetails      @relation(fields: [fingerId], references: [fingerId])
+  logs       AttendanceLog[]  // relation for all logs
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([fingerId, date])
+  @@map("attendance")
+}
+
+model AttendanceLog {
+  id           Int        @id @default(autoincrement())
+  attendanceId Int
+  type         LogType   
+  time         DateTime   
+
+  attendance   Attendance @relation(fields: [attendanceId], references: [id])
+
+  createdAt    DateTime @default(now())
+}
+
+
+
+model Holiday {
+  id           Int      @id @default(autoincrement())
+  name         String
+  date         DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("holidays")
+}
+
+model DepartmentEvent {
+  id           Int      @id @default(autoincrement())
+  departmentId Int?
+  branchId     Int?
+
+  name         String
+  description  String?
+  startDate    DateTime
+  endDate      DateTime
+  department   Department? @relation(fields: [departmentId], references: [id])
+  branch       Branch? @relation(fields: [branchId], references: [id])
+
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("events") 
+}
+
+model Activity {
+  id           Int      @id @default(autoincrement())
+  name         String
+  images        String[]
+  description  String?
+  userId       Int
+  user         UserDetails @relation(fields: [userId], references: [id])
+
+  comments     Comment[]     // Relation to comments
+  reactions    ActivityReaction[] // Reactions for activity
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("activities")
+}
+
+model Comment {
+  id         Int       @id @default(autoincrement())
+  content    String
+  userId     Int
+  user       UserDetails @relation(fields: [userId], references: [id])
+  activityId Int
+  activity   Activity  @relation(fields: [activityId], references: [id])
+
+  reactions  CommentReaction[] // Reactions for comments
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+model ActivityReaction {
+  id         Int        @id @default(autoincrement())
+  activityId Int
+  userId     Int
+  type       ReactionType
+  activity   Activity   @relation(fields: [activityId], references: [id])
+  user       UserDetails @relation(fields: [userId], references: [id])
+
+  createdAt  DateTime   @default(now())
+
+  @@unique([activityId, userId]) // Ensure one reaction per user per activity
+}
+
+model CommentReaction {
+  id         Int        @id @default(autoincrement())
+  commentId  Int
+  userId     Int
+  type       ReactionType
+  comment    Comment    @relation(fields: [commentId], references: [id])
+  user       UserDetails @relation(fields: [userId], references: [id])
+
+  createdAt  DateTime   @default(now())
+
+  @@unique([commentId, userId]) // Ensure one reaction per user per comment
+}
+
+
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      NotificationType 
+  referenceId Int        
+  isSeen    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user UserDetails @relation(fields: [userId], references: [id])
+}
+
+enum LogType {
+  CHECK_IN
+  CHECK_OUT
+}
+
+enum NotificationType {
+  TODO
+  LEAVE
+  REQUISITION
+  HOLIDAY
+  EVENT
+  ACTIVITY
+  MESSAGE
+}
+
+
+enum ReactionType {
+
+  LOVE
+
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Gender {
+  FEMALE
+  MALE
+}
+
+enum RequisitionType {
+  HIRING
+  ASSET
+  TRAINING
+  TRAVEL
+  BUDGET
+  OTHERS
+}
+
+enum RequisitionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  RETURNED
+  EXPIRED
+  BROKEN
+}
+
+
+
+enum PriorityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAW
+}
+
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum UserStatus {
+  ACTIVATE
+  DEACTIVATE
+}
+
+enum UserExitType {
+  TERMINATED
+  RESIGNED
+}
+enum FullWeek {
+  SATURDAY
+  SUNDAY
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+enum LeaveType {
+  SICK
+  CASUAL
+  PAID
+  UNPAID
+}
+
+
+enum UserPower {
+  DASHBOARD
+  TRANSACTION 
+  COMPANY
+  BRANCH
+  DEPARTMENT 
+  USERS
+  REQUISITION
+  ATTENDANCE
+  LEAVE
+  TEAM
+}
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  EMPLOYEE
+  HR
+  INCHARGE
+  MANAGER
+}
+
+enum AttendanceStatus {
+  ON_TIME
+  LATE
+  HALF_DAY
+  ABSENT
+  LEAVE
+  ROASTER
+}

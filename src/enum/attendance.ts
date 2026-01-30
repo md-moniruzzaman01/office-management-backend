@@ -1,0 +1,8 @@
+export enum ENUM_ATTENDANCE_STATUS {
+  ON_TIME = 'ON_TIME',
+  LATE = 'LATE',
+  HALF_DAY = 'HALF_DAY',
+  ABSENT = 'ABSENT',
+  LEAVE = 'LEAVE',
+  ROASTER = 'ROASTER',
+}
