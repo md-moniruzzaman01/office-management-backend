@@ -21,7 +21,7 @@ router.get(
   ServiceMessageController.getSingleMessage
 );
 
-// Get messages for a specific chat room
+
 router.get(
   '/room/:roomId',
   auth(

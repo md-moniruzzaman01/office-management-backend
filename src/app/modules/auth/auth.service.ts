@@ -28,9 +28,9 @@ async function loginUser(payload: ILoginUser): Promise<ILoginUserResponse> {
     throw new ApiError(400, 'User does not exist');
   }
 
-  if (!user?.verified) {
-    throw new ApiError(403, 'Your account is not verified');
-  }
+  // if (!user?.verified) {
+  //   throw new ApiError(403, 'Your account is not verified');
+  // }
   if (user?.status !== 'ACTIVATE') {
     throw new ApiError(403, 'Your account is deactivated');
   }
