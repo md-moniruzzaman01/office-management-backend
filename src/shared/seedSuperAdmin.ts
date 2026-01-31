@@ -36,7 +36,6 @@ export const seedSuperAdmin = async () => {
     },
   });
 
-  // 1️⃣ Branch find or create
   let branch = await prisma.branch.findFirst({
     where: { name: 'Head Office' },
   });
