@@ -12,11 +12,6 @@ import './cron/autoInsertHolidays';
 import './cron/deleteSeenNotifications';
 import './cron/generateAttendanceAbsent';
 import './cron/scheduleNotification';
-import { sendEmail } from './helpers/Email Service/email.service';
-import { submittedMailTemplate } from './helpers/Email Templates/submittedMailTemplate';
-import { contactForm } from './helpers/pages/contactForm';
-import { successPage } from './helpers/pages/succesPage';
-import { superAdminEmail } from './shared/config/secret';
 
 const app: Application = express();
 
@@ -53,35 +48,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1', routes);
 
 app.get('/', (req: Request, res: Response) => {
-  res.send(contactForm());
+  res.send("softwara");
 });
 
-app.post(
-  '/contact',
-  contactLimiter,
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const { name, email, message } = req.body;
 
-      if (!name || !email || !message) {
-        res.status(400).send('All fields are required!');
-      }
-
-      // send email
-      sendEmail(
-        superAdminEmail as string,
-        (props: any) => submittedMailTemplate(props),
-        '📩 New Contact Request',
-        { name, email, message }
-      );
-
-      res.send(successPage());
-    } catch (error) {
-      console.error(error);
-      res.status(500).send('Something went wrong while sending the email.');
-    }
-  }
-);
 
 app.post('/iclock/cdata', ServiceAttendanceController.createAttendance);
 app.get('/iclock/cdata', (req, res) => {
